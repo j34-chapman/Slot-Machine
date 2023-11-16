@@ -14,45 +14,30 @@ symbol_count = {
     "D": 8
 }
 
+
 # Function to simulate a slot machine spin
 def get_slot_machine_spin(rows, cols, symbols):
-    # Initialize an empty list to store all symbols based on their counts
     all_symbols = []
 
     #  Iterate over each symbol and its count in the symbols dictionary 
-    # Im creating the key and value on the spot and appending to symbols dictionary
     #    Key         Value    in   dictionary.symbols
-    for symbol_key, symbol_value in symbols.items():
-        # Repeat the appending of the symbol to all_symbols according to its count
-        for _ in range(symbol_value):
-            all_symbols.append(symbol_key)
+    for symbol, symbol_quantity in symbols.items():
+        for _ in range(symbol_quantity):
+            all_symbols.append(symbol)
 
     # Initialize a list to store columns in the slot machine
     columns = []
-
-    # Iterate over the specified number of columns
     for _ in range(cols):
-        # Initialize an empty list to represent a column
         column = []
-
-        # Create a copy of all_symbols to work with
         current_symbols = all_symbols[:]
-
-        # Iterate over the specified number of rows
         for _ in range(rows):
             # Choose a random symbol from the current_symbols list
             value = random.choice(current_symbols)
             
             # Remove the chosen symbol from the current_symbols list to avoid repetition
             current_symbols.remove(value)
-            
-            # Append the chosen symbol to the column
             column.append(value)
-
-        # Append the completed column to the columns list
         columns.append(column)
-
-    # Return the list of columns representing the slot machine spin
     return columns
 
 
