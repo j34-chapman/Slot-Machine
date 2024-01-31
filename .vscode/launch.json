@@ -6,8 +6,8 @@
       "type": "lldb",
       "request": "launch",
       "args": [],
-      "cwd": "/Users/jakechapman/Desktop/Final Year/PLAP/Slot-Machine",
-      "program": "/Users/jakechapman/Desktop/Final Year/PLAP/Slot-Machine/build/Debug/outDebug"
+      "cwd": ".",
+      "program": "build/Debug/outDebug"
     }
   ]
 }

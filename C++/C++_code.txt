@@ -1,0 +1,314 @@
+#include <unordered_map>
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+
+using namespace std;
+
+// Create player class
+class Player {
+private:
+    double balance;
+
+public:
+    Player() {
+        balance = 10.0; // Set initial balance to £10
+    }
+
+    double getBalance() const {
+        return balance;
+    }
+
+    void setBalance(double newBalance) {
+        balance = newBalance;
+    }
+};
+
+// Define a class called "SlotMachine"
+class SlotMachine {
+public:
+    int ONEPOUND_BET;
+    int ROWS;
+    int COLS;
+    unordered_map<char, int> symbol_count;
+    unordered_map<char, int> symbol_value;
+
+    virtual pair<int, vector<int>> check_winnings(const vector<vector<char>>& matrix, int bet, const unordered_map<char, int>& values, Player& player) = 0;
+    virtual void print_slot_machine(const vector<vector<char>>& columns) = 0;
+    virtual vector<vector<char>> get_slot_machine_spin(int rows, int cols, const unordered_map<char, int>& symbols, Player& player) = 0;
+
+    virtual ~SlotMachine() = default;
+};
+
+// Define a class called "NormalMachine" that inherits from the "SlotMachine" class
+class NormalMachine : public SlotMachine {
+public:
+    NormalMachine() {
+        ONEPOUND_BET = 1;
+        ROWS = 3;
+        COLS = 3;
+
+        symbol_count = {
+                {'A', 2},
+                {'B', 4},
+                {'C', 6},
+                {'D', 8}
+        };
+
+        symbol_value = {
+                {'A', 5},
+                {'B', 4},
+                {'C', 3},
+                {'D', 2}
+        };
+    }
+
+    // Define a function called "check_winnings" that takes in a matrix, a bet, a symbol count map, and a player, and returns a pair of integers and a vector of integers.
+    pair<int, vector<int>> check_winnings(const vector<vector<char>>& matrix, int bet, const unordered_map<char, int>& values, Player& player) override {
+        int winnings = 0;
+        vector<int> winning_lines;
+
+        // Get the symbols in the middle row
+        vector<char> middle_row_symbols = matrix[matrix.size() / 2];
+
+        // Check if all symbols in the middle row are the same
+        char symbol = middle_row_symbols[0];
+        bool all_symbols_same = true;
+        for (char middle_symbol : middle_row_symbols) {
+            if (middle_symbol != symbol) {
+                all_symbols_same = false;
+                break;
+            }
+        }
+
+        if (all_symbols_same) {
+            winnings = values.at(symbol) * bet;
+            winning_lines.push_back(matrix.size() / 2 + 1);
+
+            double currentBalance = player.getBalance();
+            player.setBalance(currentBalance + winnings);
+            cout << "Your new balance is: " << player.getBalance() << endl;
+            cout << "Winnings: £" << winnings << endl;
+        } else {
+            cout << "Your new balance is: " << player.getBalance() << endl;
+        }
+
+        return {winnings, winning_lines};
+    }
+
+    // Define a function called "print_slot_machine" that takes in a vector of vectors of characters.
+    void print_slot_machine(const vector<vector<char>>& columns) override {
+        // Iterate over each column in the vector of columns
+        for (const auto& column : columns) {
+            // Iterate over each symbol in the current column
+            for (const auto& symbol : column) {
+                // Print the symbol followed by a separator
+                cout << symbol << " | ";
+            }
+            // Print a newline character to move to the next row
+            cout << endl;
+        }
+    }
+
+    
+    // Define a function called "get_slot_machine_spin" that takes in an integer, an integer, a symbol count map, and a player, and returns a vector of vectors of characters.
+    vector<vector<char>> get_slot_machine_spin(int rows, int cols, const unordered_map<char, int>& symbols, Player& player) override {
+        vector<vector<char>> columns(cols, vector<char>(rows));
+
+        vector<char> all_symbols;
+        int total_symbols = 0;
+        for (const auto& symbol_count : symbols) {
+            total_symbols += symbol_count.second;
+            all_symbols.insert(all_symbols.end(), symbol_count.second, symbol_count.first);
+        }
+
+        random_device rd;
+        mt19937 g(rd());
+        shuffle(all_symbols.begin(), all_symbols.end(), g);
+
+        for (int i = 0; i < cols; ++i) {
+            copy_n(all_symbols.begin() + i * rows, rows, columns[i].begin());
+        }
+
+        // For every spin deduct £1
+        double currentBalance = player.getBalance();
+        player.setBalance(currentBalance - ONEPOUND_BET);
+
+        return columns;
+    }
+};
+
+// Define a class called "JackPotMachine" that inherits from the "SlotMachine" class
+class JackPotMachine : public SlotMachine {
+public:
+    JackPotMachine() {
+        ONEPOUND_BET = 1;
+        ROWS = 5;
+        COLS = 5;
+
+        symbol_count = {
+                // Increased odds for higher values to increase payout
+                {'&', 16},
+                {'$', 6},
+                {'*', 1},
+
+        };
+
+        symbol_value = {
+                {'&', 10},
+                {'$', 8},
+                {'*', 6},
+
+        };
+    }
+
+    // Define a function called "check_winnings" that takes in a matrix, a bet, a symbol count map, and a player, and returns a pair of integers and a vector of integers.
+    pair<int, vector<int>> check_winnings(const vector<vector<char>>& matrix, int bet, const unordered_map<char, int>& values, Player& player) override {
+        int winnings = 0;
+        vector<int> winning_lines;
+
+        // Get the symbols in the middle row
+        vector<char> middle_row_symbols = matrix[matrix.size() / 2]; // Middle row index for a 5x5 matrix
+
+        // Check if all symbols in the middle row are the same
+        char symbol = middle_row_symbols[0];
+        bool all_symbols_same = true;
+        for (char middle_symbol : middle_row_symbols) {
+            if (middle_symbol != symbol) {
+                all_symbols_same = false;
+                break;
+            }
+        }
+
+        if (all_symbols_same) {
+            winnings = values.at(symbol) * bet;
+            winning_lines.push_back(matrix.size() / 2 + 1); // Middle row line number for a 5x5 matrix
+
+            double currentBalance = player.getBalance();
+            player.setBalance(currentBalance + winnings);
+            cout << "Your new balance is: " << player.getBalance() << endl;
+            cout << "Winnings: £" << winnings << endl;
+        }
+        else {
+            cout << "Your new balance is: " << player.getBalance() << endl;
+        }
+
+        return {winnings, winning_lines};
+    }
+
+    // Define a function called "print_slot_machine" that takes in a vector of vectors of characters.
+    void print_slot_machine(const vector<vector<char>>& columns) override {
+        // Iterate over each column in the vector of columns
+        for (const auto& column : columns) {
+            // Iterate over each symbol in the current column
+            for (const auto& symbol : column) {
+                // Print the symbol followed by a separator
+                cout << symbol << " | ";
+            }
+            // Print a newline character to move to the next row
+            cout << endl;
+        }
+    }
+    
+    // Define a function called "get_slot_machine_spin" that takes in an integer, an integer, a symbol count map, and a player, and returns a vector of vectors of characters.
+    vector<vector<char>> get_slot_machine_spin(int rows, int cols, const unordered_map<char, int>& symbols, Player& player) override {
+        vector<vector<char>> columns(cols, vector<char>(rows));
+
+        vector<char> all_symbols;
+        int total_symbols = 0;
+        for (const auto& symbol_count : symbols) {
+            total_symbols += symbol_count.second;
+            all_symbols.insert(all_symbols.end(), symbol_count.second, symbol_count.first);
+        }
+
+        random_device rd;
+        mt19937 g(rd());
+        shuffle(all_symbols.begin(), all_symbols.end(), g);
+
+        for (int i = 0; i < cols; ++i) {
+            copy_n(all_symbols.begin() + i * rows, rows, columns[i].begin());
+        }
+
+        // For every spin deduct £1
+        double currentBalance = player.getBalance();
+        player.setBalance(currentBalance - ONEPOUND_BET);
+
+        return columns;
+    }
+};
+
+
+// Define a class called "GameController"
+class GameController {
+public:
+    Player player;
+
+    // Create the loop for the game letting them keep playing the game until they quit
+    void pressSpin() {
+        if (player.getBalance() >= 1) {
+            // Generate a random number between 0 and 99
+            int randomNum = rand() % 100;
+
+            // Choose the machine based on the random number
+            SlotMachine* chosenMachine;
+            if (randomNum  > 90) {
+                // Print congratulatory message
+                cout << "CONGRATULATIONS !!!  You got a jackpot spin ! Better Odds + More Money " << endl;
+                chosenMachine = new JackPotMachine();
+            } else {
+                chosenMachine = new NormalMachine();
+            }
+
+            // Spin the chosen slot machine
+            vector<vector<char>> spinResult = chosenMachine->get_slot_machine_spin(chosenMachine->ROWS,
+                                                                                   chosenMachine->COLS,
+                                                                                   chosenMachine->symbol_count, player);
+
+            // Print the result of the spin
+            chosenMachine->print_slot_machine(spinResult);
+
+            // Check for winnings and update the player's balance
+            pair<int, vector<int>> result = chosenMachine->check_winnings(spinResult, chosenMachine->ONEPOUND_BET,
+                                                                          chosenMachine->symbol_value, player);
+
+            delete chosenMachine;
+        }
+        else {
+            cout << "Your balance is: " << player.getBalance() << " You don't have enough money" << endl;
+        }
+    }
+
+    // Define a function called "playGame" that calls the "pressSpin" function
+    void playGame() {
+        while (true) {
+            pressSpin();
+            cout << "Would you like to play again? (y/n)" << endl;
+            char choice;
+            cin >> choice;
+            if (choice == 'n') {
+                // Tell them balance at the end
+                cout << "Your balance is: £" << player.getBalance() << endl;
+                cout << "Thanks for playing!" << endl;
+                break;
+            }
+            else if (choice == 'y') {
+                continue;
+            }
+            else {
+                cout << "Invalid input. Please enter 'y' or 'n'" << endl;
+            }
+        }
+    }
+};
+
+
+// Define the main function
+int main() {
+    GameController gameController;
+
+    // Call the playGame method to start the game
+    gameController.playGame();
+
+    return 0;
+}
