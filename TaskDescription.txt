@@ -1,0 +1,1 @@
+Develop a Slot Machine which can randomly enter you into jackpot mode.
